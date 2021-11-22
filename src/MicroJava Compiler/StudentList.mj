@@ -1,0 +1,87 @@
+program StudentList
+	final int MAXLEN = 20;
+	
+	class Student {
+		int matrNr;
+		char[] name;
+	}
+	
+	Student[] list;
+	int stCnt;
+
+{
+	void printString (char[] str)
+		int i;
+	{
+		if (str != null) {
+			i = 0;
+			while (i < len(str)) {
+				print(str[i]);
+				i++;
+			}
+		}
+	}
+	
+	void init () {
+		list = new Student[MAXLEN];
+		stCnt = 0;
+	}
+	
+	void add (Student s)
+		int i;
+	{	
+		/* insert sorted by matrNr */
+		i = stCnt - 1;
+		while (i >= 0 && s.matrNr < list[i].matrNr) {
+			list[i+1] = list[i];
+			i--;
+		}
+		list[i+1] = s;
+		stCnt++;
+	}
+
+	int find (int matrNr) 
+		int l, r, x;
+		
+	{
+		/* binary search */
+		l = 0; r = stCnt-1; 
+		while (l <= r && matrNr != list[x].matrNr) {
+			x = (l+r)/2;
+			if (matrNr < list[x].matrNr) r = x-1;
+			else l = x+1;
+		}
+		if (matrNr == list[x].matrNr) return x;
+
+		return -1;	
+	}
+
+	void printStudent (int i) {
+		print('m'); print('['); print(i); print(']'); print('=');
+		print(list[i].matrNr); print(','); printString(list[i].name); 
+		print('\n');
+	}
+
+	void main()
+		Student s;
+	{	
+		init();
+		s = new Student; s.matrNr = 1234567; s.name = new char[3]; 
+		s.name[0] = 'X'; s.name[1] = '\\'; s.name[2] = 'Y'; 
+		add(s);
+		s = new Student; s.matrNr = 9876543; s.name = new char[4]; 
+		s.name[0] = 'M'; s.name[1] = 'r'; s.name[2] = '.'; s.name[3] = 'X';
+		add(s);
+		s = new Student; s.matrNr = 9090900; s.name = new char[2]; 
+		s.name[0] = 'A'; s.name[1] = 'l';
+		add(s);
+    
+		printStudent(0);
+		printStudent(1);
+		printStudent(2);
+  
+		print(9876543); print(' '); printString(list[find(9876543)].name); print('\n');
+		print(1234567); print(' '); printString(list[find(1234567)].name); print('\n');
+		print(9090900); print(' '); printString(list[find(9090900)].name); print('\n');
+	}
+}

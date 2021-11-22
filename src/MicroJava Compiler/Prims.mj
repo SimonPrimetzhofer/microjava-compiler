@@ -1,0 +1,27 @@
+program Prims
+{
+
+	void print_prims (int n)
+		int[] numbers;
+		int i, j;
+	{
+		numbers = new int[n];
+		i = 0;
+		while(i < n) {
+			if(1 < i && numbers[i] == 0) {
+				print(i);
+				print('\n');
+				j = i;
+				while(j < n) {
+					numbers[j]++;
+					j += i;
+				}
+			}
+			i++;
+		}
+	}
+
+	void main () {
+		print_prims(1000);
+	}
+}

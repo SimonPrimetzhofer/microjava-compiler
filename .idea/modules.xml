@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Compiler.iml" filepath="$PROJECT_DIR$/Compiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/src/MicroJava Compiler/MicroJava Compiler.iml" filepath="$PROJECT_DIR$/src/MicroJava Compiler/MicroJava Compiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/src/MicroJava Tests/MicroJava Tests.iml" filepath="$PROJECT_DIR$/src/MicroJava Tests/MicroJava Tests.iml" />
+    </modules>
+  </component>
+</project>

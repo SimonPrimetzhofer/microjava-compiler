@@ -1,0 +1,11 @@
+program Test
+{
+
+	int Trap()
+	{
+	}
+
+	void main () {
+		print(Trap());
+	}
+}
