@@ -51,8 +51,7 @@ public final class TabImpl extends Tab {
     }
 
     public void openScope() {
-        Scope s = new Scope(curScope);
-        curScope = s;
+        curScope = new Scope(curScope);
         curLevel++;
     }
 

@@ -159,7 +159,7 @@ public final class ParserImpl extends Parser {
         check(Kind.rbrace);
     }
 
-    private Obj MethodDecl() {
+    private void MethodDecl() {
         StructImpl type = Tab.noType;
         if (sym == Kind.ident) {
             type = Type();
@@ -201,8 +201,6 @@ public final class ParserImpl extends Parser {
 
         meth.locals = tab.curScope.locals();
         tab.closeScope();
-
-        return meth;
     }
 
     private StructImpl Type() {
