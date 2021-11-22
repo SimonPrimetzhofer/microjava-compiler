@@ -76,7 +76,7 @@ public final class TabImpl extends Tab {
         if (kind == Kind.Var) {
             obj.adr = curScope.nVars();
             obj.level = curLevel;
-        } else if(kind == Kind.Meth) {
+        } else if (kind == Kind.Meth) {
             obj.adr = curScope.nVars();
         }
         curScope.insert(obj);

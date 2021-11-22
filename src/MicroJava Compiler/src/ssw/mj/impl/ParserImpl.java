@@ -30,7 +30,7 @@ public final class ParserImpl extends Parser {
         firstExpr = EnumSet.of(Kind.minus, Kind.ident, Kind.number, Kind.charConst, Kind.new_, Kind.lpar);
         firstStatement = EnumSet.of(Kind.ident, Kind.if_, Kind.while_, Kind.break_, Kind.return_, Kind.read, Kind.print, Kind.lbrace, Kind.semicolon);
         firstRelop = EnumSet.of(Kind.eql, Kind.neq, Kind.gtr, Kind.geq, Kind.lss, Kind.leq);
-        recoverDecl = EnumSet.of(Kind.final_, Kind.ident, Kind.class_, Kind.lbrace, Kind.eof);
+        recoverDecl = EnumSet.of(Kind.final_, Kind.class_, Kind.lbrace, Kind.eof);
         recoverMethodDecl = EnumSet.of(Kind.ident, Kind.void_, Kind.rbrace, Kind.eof);
         recoverStat = EnumSet.of(Kind.if_, Kind.while_, Kind.break_, Kind.return_, Kind.read, Kind.print, Kind.semicolon, Kind.rbrace, Kind.eof);
     }
@@ -506,7 +506,7 @@ public final class ParserImpl extends Parser {
         error(Message.INVALID_DECL);
         do {
             scan();
-        } while (!recoverDecl.contains(sym));
+        } while (!recoverDecl.contains(sym) && !(sym == Kind.ident && tab.find(t.str).type != Tab.noType));
         errDist = 0;
     }
 
