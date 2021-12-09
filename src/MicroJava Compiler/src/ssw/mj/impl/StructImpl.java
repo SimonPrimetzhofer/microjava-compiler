@@ -1,6 +1,7 @@
 package ssw.mj.impl;
 
 import ssw.mj.symtab.Struct;
+import ssw.mj.symtab.Tab;
 
 public final class StructImpl extends Struct {
 
@@ -16,17 +17,29 @@ public final class StructImpl extends Struct {
         super(elemType);
     }
 
-    // TODO Exercise 5: checks for different kinds of type compatibility
-
     @Override
     public boolean compatibleWith(StructImpl other) {
-       // TODO
-    	return false;
+        return this.equals(other) ||
+                (this == Tab.nullType && other.isRefType()) ||
+                (other == Tab.nullType && this.isRefType());
     }
 
     @Override
     public boolean assignableTo(StructImpl dest) {
-        // TODO
-    	return false;
+        return this.equals(dest) ||
+                (this == Tab.nullType && dest.isRefType()) ||
+                (this.kind == Kind.Arr && dest.kind == Kind.Arr && dest.elemType == Tab.noType);
+    }
+
+    public boolean isRefType() {
+        return kind == Kind.Class || kind == Kind.Arr;
+    }
+
+    public boolean equals(StructImpl other) {
+        if (kind == Kind.Arr) {
+            return other.kind == Kind.Arr && elemType.equals(other.elemType);
+        }
+
+        return this == other;
     }
 }
