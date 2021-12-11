@@ -6,10 +6,15 @@ import ssw.mj.codegen.Code;
 import ssw.mj.codegen.Operand;
 import ssw.mj.symtab.Tab;
 
+import java.util.EnumSet;
+
 public final class CodeImpl extends Code {
+
+    private EnumSet<Operand.Kind> assignableKinds;
 
     public CodeImpl(Parser p) {
         super(p);
+        assignableKinds = EnumSet.of(Operand.Kind.Local, Operand.Kind.Static, Operand.Kind.Elem, Operand.Kind.Fld);
     }
 
     public void load(Operand x) {
@@ -54,7 +59,6 @@ public final class CodeImpl extends Code {
                     put(OpCode.aload);
                 }
                 break;
-//            case Meth: parser.error(Message.NO_METH); break;
             default:
                 parser.error(Message.NO_VAL);
         }
@@ -86,12 +90,37 @@ public final class CodeImpl extends Code {
                 break;
             default:
                 put(OpCode.const_);
-                put(x);
+                put4(x);
         }
     }
 
-    public void assign(Operand x, Operand y) {
+    public void storeConst(int x) {
+        switch(x) {
+            case 0:
+                put(OpCode.store_0);
+                break;
+            case 1:
+                put(OpCode.store_1);
+                break;
+            case 2:
+                put(OpCode.store_2);
+                break;
+            case 3:
+                put(OpCode.store_3);
+                break;
+            default:
+                put(OpCode.store);
+                put4(x);
+        }
+    }
+
+    public void assign(Operand x, Operand y, OpCode op) {
         load(y);
+
+        // check, if we have a combined operation (like +=)
+        if (op != OpCode.nop) {
+            put(op);
+        }
         switch (x.kind) {
             case Local:
                 switch (x.adr) {
@@ -140,14 +169,30 @@ public final class CodeImpl extends Code {
     }
 
     public void incFieldOrElem(Operand x, int val) {
-        if (x.type.kind == StructImpl.Kind.Arr) {
+        Operand.Kind opKind = x.kind;
+        if (opKind == Operand.Kind.Elem) {
             put(OpCode.dup2);
-        } else {
+        } else if (opKind != Operand.Kind.Static) {
             put(OpCode.dup);
         }
         load(x);
         loadConst(val);
         put(OpCode.add);
+
+        if (opKind == Operand.Kind.Elem) {
+            put(OpCode.astore);
+        } else if(opKind == Operand.Kind.Con || opKind == Operand.Kind.Local || opKind == Operand.Kind.Fld) {
+            put(OpCode.putfield);
+            put2(x.adr);
+        } else if (x.kind == Operand.Kind.Static) {
+            put(OpCode.putstatic);
+            put2(x.adr);
+        }
+    }
+
+    // we can assign values to local and global variables, array-elements and fields
+    public boolean isAssignable(Operand x) {
+        return assignableKinds.contains(x.kind);
     }
 
 }
