@@ -693,7 +693,7 @@ public final class ParserImpl extends Parser {
             Operand y = Expr();
             nPars++;
             if (localsIterator.hasNext() && !y.type.assignableTo(localsIterator.next().type)) {
-                error(Message.INCOMP_TYPES);
+                error(Message.PARAM_TYPE);
             }
 
             // handle more params
@@ -702,7 +702,7 @@ public final class ParserImpl extends Parser {
                 y = Expr();
                 nPars++;
                 if (localsIterator.hasNext() && !y.type.assignableTo(localsIterator.next().type)) {
-                    error(Message.INCOMP_TYPES);
+                    error(Message.PARAM_TYPE);
                 }
             }
         }
@@ -799,7 +799,7 @@ public final class ParserImpl extends Parser {
         error(Message.INVALID_DECL);
         do {
             scan();
-        } while (!recoverDecl.contains(sym) && !(sym == Kind.ident /*&& tab.find(t.str).type != Tab.noType*/) /*&& sym != Kind.semicolon*/);
+        } while (!(recoverDecl.contains(sym) || (sym != Kind.ident || tab.find(t.str).type != Tab.noType) || t.kind == Kind.semicolon));
         errDist = 0;
     }
 
