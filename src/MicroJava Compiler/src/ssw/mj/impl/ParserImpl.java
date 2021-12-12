@@ -283,7 +283,7 @@ public final class ParserImpl extends Parser {
             recoverStat();
         }
 
-        Operand x = null;
+        Operand x;
 
         switch (sym) {
             case ident:
@@ -599,7 +599,7 @@ public final class ParserImpl extends Parser {
     }
 
     private Operand Factor() {
-        Operand x = null;
+        Operand x;
 
         switch (sym) {
             case ident:
