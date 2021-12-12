@@ -308,7 +308,7 @@ public final class ParserImpl extends Parser {
 
                     Operand y = Expr();
 
-                    if (op != OpCode.nop && (x.type.kind != StructImpl.Kind.Int || y.type.kind != StructImpl.Kind.Int)) {
+                    if (op != OpCode.nop && (x.type != Tab.intType || y.type != Tab.intType)) {
                         error(Message.NO_INT_OP);
                     }
 
@@ -327,7 +327,6 @@ public final class ParserImpl extends Parser {
                     if (x.type != Tab.intType) {
                         error(Message.NO_INT);
                     }
-
                     if (!code.isAssignable(x)) {
                         error(Message.NO_VAR);
                     }
@@ -339,7 +338,7 @@ public final class ParserImpl extends Parser {
                     }
                     scan();
                 } else if (sym == Kind.mminus) {
-                    if (x.type.kind != StructImpl.Kind.Int) {
+                    if (x.type != Tab.intType) {
                         error(Message.NO_INT);
                     }
 
@@ -463,8 +462,8 @@ public final class ParserImpl extends Parser {
                 x.type = obj.type;
                 x.adr = obj.adr;
             } else if (sym == Kind.lbrack) {
-                scan();
                 code.load(x);
+                scan();
 
                 Operand y = Expr();
 
@@ -710,7 +709,7 @@ public final class ParserImpl extends Parser {
         // compare number of parameters and consider possible varargs (then more may follow)
         if (nPars < x.obj.nPars && !x.obj.hasVarArg) {
             error(Message.LESS_ACTUAL_PARAMS);
-        } else if(nPars > x.obj.nPars) {
+        } else if (nPars > x.obj.nPars) {
             error(Message.MORE_ACTUAL_PARAMS);
         }
 

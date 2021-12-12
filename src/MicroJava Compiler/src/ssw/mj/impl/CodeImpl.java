@@ -10,7 +10,7 @@ import java.util.EnumSet;
 
 public final class CodeImpl extends Code {
 
-    private EnumSet<Operand.Kind> assignableKinds;
+    private final EnumSet<Operand.Kind> assignableKinds;
 
     public CodeImpl(Parser p) {
         super(p);
@@ -95,7 +95,7 @@ public final class CodeImpl extends Code {
     }
 
     public void storeConst(int x) {
-        switch(x) {
+        switch (x) {
             case 0:
                 put(OpCode.store_0);
                 break;
@@ -136,9 +136,9 @@ public final class CodeImpl extends Code {
                     case 3:
                         put(OpCode.store_3);
                         break;
-                    case 4:
+                    default:
                         put(OpCode.store);
-                        put(x.adr);
+                        put2(x.adr);
                         break;
                 }
                 break;
@@ -163,28 +163,30 @@ public final class CodeImpl extends Code {
     }
 
     public void incLocal(Operand x, int val) {
-        load(x);
-        loadConst(val);
         put(OpCode.inc);
+        put(x.adr);
+        put(val);
     }
 
     public void incFieldOrElem(Operand x, int val) {
+        // load x changes kind to stack -> memorize it for later
         Operand.Kind opKind = x.kind;
         if (opKind == Operand.Kind.Elem) {
             put(OpCode.dup2);
         } else if (opKind != Operand.Kind.Static) {
             put(OpCode.dup);
         }
+
         load(x);
         loadConst(val);
         put(OpCode.add);
 
         if (opKind == Operand.Kind.Elem) {
             put(OpCode.astore);
-        } else if(opKind == Operand.Kind.Con || opKind == Operand.Kind.Local || opKind == Operand.Kind.Fld) {
+        } else if (opKind == Operand.Kind.Con || opKind == Operand.Kind.Local || opKind == Operand.Kind.Fld) {
             put(OpCode.putfield);
             put2(x.adr);
-        } else if (x.kind == Operand.Kind.Static) {
+        } else if (opKind == Operand.Kind.Static) {
             put(OpCode.putstatic);
             put2(x.adr);
         }

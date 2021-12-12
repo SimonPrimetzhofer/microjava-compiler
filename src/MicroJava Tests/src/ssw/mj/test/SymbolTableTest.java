@@ -851,7 +851,7 @@ public class SymbolTableTest extends CompilerTestCaseSupport {
 		parseAndVerify();
 	}
 
-	@Test(timeout = 15000)
+	@Test()
 	public void tooManyLocals() {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 127; i++) {
@@ -874,7 +874,7 @@ public class SymbolTableTest extends CompilerTestCaseSupport {
 		parseAndVerify();
 	}
 
-	@Test(timeout = 15000)
+	@Test()
 	public void tooManyLocals2() {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 126; i++) {
@@ -899,7 +899,7 @@ public class SymbolTableTest extends CompilerTestCaseSupport {
 		parseAndVerify();
 	}
 
-	@Test(timeout = 15000)
+	@Test()
 	public void tooManyGlobals() {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 32767; i++) {

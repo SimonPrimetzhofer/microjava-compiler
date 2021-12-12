@@ -31,5 +31,5 @@ public class Configuration {
 	 * <em>Attention</em>: For most computers it is likely that there is an
 	 * endless loop in the MicroJava compiler if a test fails for a timeout.
 	 */
-	public static final long DEFAULT_TIMEOUT = Long.getLong("microjava.timeout", 1000 * 10);
+	public static final long DEFAULT_TIMEOUT = Long.getLong("microjava.timeout", 1000 * 15);
 }
