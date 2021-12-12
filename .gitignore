@@ -24,4 +24,8 @@
 hs_err_pid*
 
 .idea/
+*.iml
+out/
+**/bin
+**/settings
 # End of https://www.toptal.com/developers/gitignore/api/java
