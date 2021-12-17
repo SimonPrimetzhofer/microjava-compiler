@@ -4,12 +4,12 @@ import ssw.mj.Errors.Message;
 import ssw.mj.Parser;
 import ssw.mj.Scanner;
 import ssw.mj.Token.Kind;
+import ssw.mj.codegen.Code.CompOp;
 import ssw.mj.codegen.Code.OpCode;
 import ssw.mj.codegen.Operand;
 import ssw.mj.symtab.Obj;
 import ssw.mj.symtab.Struct;
 import ssw.mj.symtab.Tab;
-import ssw.mj.codegen.Code.CompOp;
 
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -319,10 +319,6 @@ public final class ParserImpl extends Parser {
                         error(Message.INCOMP_TYPES);
                     }
                 } else if (sym == Kind.lpar) {
-                    if (x.kind != Operand.Kind.Meth) {
-                        error(Message.NO_METH);
-                        x.obj = tab.noObj;
-                    }
                     ActPars(x);
                 } else if (sym == Kind.pplus) {
                     if (x.type != Tab.intType) {
@@ -428,6 +424,7 @@ public final class ParserImpl extends Parser {
                 scan();
                 check(Kind.lpar);
                 x = Designator();
+                Operand.Kind kind = x.kind;
                 if (x.type != Tab.intType && x.type != Tab.charType) {
                     error(Message.READ_VALUE);
                 }
@@ -440,7 +437,7 @@ public final class ParserImpl extends Parser {
                 } else if (x.type.kind == StructImpl.Kind.Int) {
                     code.put(OpCode.read);
                 }
-                code.storeConst(x.adr);
+                code.store(x, kind);
                 break;
             case print:
                 scan();
@@ -642,10 +639,6 @@ public final class ParserImpl extends Parser {
                     if (x.type == Tab.noType) {
                         error(Message.INVALID_CALL);
                     }
-                    if (x.kind != Operand.Kind.Meth) {
-                        error(Message.NO_METH);
-                        x.obj = tab.noObj;
-                    }
                     ActPars(x);
                 }
                 break;
@@ -716,6 +709,11 @@ public final class ParserImpl extends Parser {
     private void ActPars(Operand x) {
         check(Kind.lpar);
 
+        if (x.kind != Operand.Kind.Meth) {
+            error(Message.NO_METH);
+            x.obj = tab.noObj;
+        }
+
         x.kind = Operand.Kind.Stack;
 
         // we have to iterate over params to check assignability and amount of params
@@ -748,12 +746,27 @@ public final class ParserImpl extends Parser {
         }
 
         if (sym == Kind.hash) {
-            VarArgs();
+            if (x.obj.hasVarArg) {
+                VarArgs(localsIterator.next());
+            } else {
+                VarArgs(tab.noObj);
+                error(Message.INVALID_VARARG_CALL);
+            }
+        } else {
+            VarArgs(tab.noObj);
         }
+
+        if (x.obj == tab.lenObj) {
+            code.put(OpCode.arraylength);
+        } else if (x.obj != tab.ordObj && x.obj != tab.chrObj) {
+            code.put(OpCode.call);
+            code.put2(x.adr - (code.pc - 1));
+        }
+
         check(Kind.rpar);
     }
 
-    private void VarArgs() {
+    private void VarArgs(Obj obj) {
         check(Kind.hash);
         check(Kind.number);
         if (firstExpr.contains(sym)) {
@@ -802,6 +815,10 @@ public final class ParserImpl extends Parser {
             error(Message.INCOMP_TYPES);
         } else if ((x.type.isRefType() || y.type.isRefType()) && (op != CompOp.ne && op != CompOp.eq)) {
             error(Message.EQ_CHECK);
+        }
+
+        if (op == null) {
+            op = CompOp.eq;
         }
 
         return new Operand(op, code);

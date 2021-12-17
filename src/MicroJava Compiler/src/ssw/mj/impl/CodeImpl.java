@@ -39,7 +39,7 @@ public final class CodeImpl extends Code {
                         break;
                     default:
                         put(OpCode.load);
-                        put(x.adr);
+                        put4(x.adr);
                         break;
                 }
                 break;
@@ -95,34 +95,8 @@ public final class CodeImpl extends Code {
         }
     }
 
-    public void storeConst(int x) {
-        switch (x) {
-            case 0:
-                put(OpCode.store_0);
-                break;
-            case 1:
-                put(OpCode.store_1);
-                break;
-            case 2:
-                put(OpCode.store_2);
-                break;
-            case 3:
-                put(OpCode.store_3);
-                break;
-            default:
-                put(OpCode.store);
-                put4(x);
-        }
-    }
-
-    public void assign(Operand x, Operand y, OpCode op) {
-        load(y);
-
-        // check, if we have a combined operation (like +=)
-        if (op != OpCode.nop) {
-            put(op);
-        }
-        switch (x.kind) {
+    public void store(Operand x, Operand.Kind kind) {
+        switch (kind) {
             case Local:
                 switch (x.adr) {
                     case 0:
@@ -139,7 +113,7 @@ public final class CodeImpl extends Code {
                         break;
                     default:
                         put(OpCode.store);
-                        put2(x.adr);
+                        put4(x.adr);
                         break;
                 }
                 break;
@@ -161,6 +135,18 @@ public final class CodeImpl extends Code {
             default:
                 parser.error(Message.NO_VAR);
         }
+
+    }
+
+    public void assign(Operand x, Operand y, OpCode op) {
+        load(y);
+
+        // check, if we have a combined operation (like +=)
+        if (op != OpCode.nop) {
+            put(op);
+        }
+
+        store(x, x.kind);
     }
 
     public void incLocal(Operand x, int val) {
