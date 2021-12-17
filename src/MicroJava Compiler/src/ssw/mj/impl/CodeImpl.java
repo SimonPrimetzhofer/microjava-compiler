@@ -3,6 +3,7 @@ package ssw.mj.impl;
 import ssw.mj.Errors.Message;
 import ssw.mj.Parser;
 import ssw.mj.codegen.Code;
+import ssw.mj.codegen.Label;
 import ssw.mj.codegen.Operand;
 import ssw.mj.symtab.Tab;
 
@@ -197,4 +198,31 @@ public final class CodeImpl extends Code {
         return assignableKinds.contains(x.kind);
     }
 
+    public void tJump(Operand x) {
+        put(OpCode.jmp.code() + x.op.ordinal() + 1);
+        x.tLabel.put();
+    }
+
+    public void fJump(Operand x) {
+        put(OpCode.jmp.code() + CompOp.invert(x.op).ordinal() + 1);
+        x.fLabel.put();
+    }
+
+    public void jump(Label lab) {
+        put(OpCode.jmp);
+        lab.put();
+    }
+
+    public void createArray(int size, StructImpl struct) {
+        if (size >= 0) {
+            loadConst(size);
+        }
+
+        put(OpCode.newarray);
+        if (struct == Tab.charType) {
+            put(0);
+        } else {
+            put(1);
+        }
+    }
 }

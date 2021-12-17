@@ -3,12 +3,18 @@ package ssw.mj.impl;
 import ssw.mj.codegen.Code;
 import ssw.mj.codegen.Label;
 
+import java.util.ArrayList;
+
 public final class LabelImpl extends Label {
 
-    // TODO Exercise 6: Implementation of Labels for management of jump targets
+    private static final String LABEL_DEFINED_TWICE = "label defined twice";
 
-	public LabelImpl(Code code) {
+    private ArrayList<Integer> fixupList;
+
+    public LabelImpl(Code code) {
         super(code);
+        adr = -1;
+        fixupList = new ArrayList<>();
     }
 
     /**
@@ -16,7 +22,12 @@ public final class LabelImpl extends Label {
      */
     @Override
     public void put() {
-        // TODO
+        if (adr >= 0) {
+            code.put2(adr - (code.pc - 1));
+        } else {
+            fixupList.add(code.pc);
+            code.put2(0);
+        }
     }
 
     /**
@@ -24,6 +35,15 @@ public final class LabelImpl extends Label {
      */
     @Override
     public void here() {
-        // TODO
+        if (adr >= 0) {
+            throw new IllegalStateException(LABEL_DEFINED_TWICE);
+        }
+
+        for (int pos:fixupList) {
+            code.put2(pos, code.pc - (pos - 1));
+        }
+
+        fixupList = null;
+        adr = code.pc;
     }
 }

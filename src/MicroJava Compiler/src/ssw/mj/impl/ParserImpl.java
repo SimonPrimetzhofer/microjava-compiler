@@ -9,6 +9,7 @@ import ssw.mj.codegen.Operand;
 import ssw.mj.symtab.Obj;
 import ssw.mj.symtab.Struct;
 import ssw.mj.symtab.Tab;
+import ssw.mj.codegen.Code.CompOp;
 
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -20,7 +21,6 @@ public final class ParserImpl extends Parser {
     private static final int MIN_DIST = 3;
     private static final int INC_VALUE = 1;
 
-
     private final EnumSet<Kind> firstAssignop;
     private final EnumSet<Kind> firstExpr;
     private final EnumSet<Kind> firstStatement;
@@ -28,6 +28,7 @@ public final class ParserImpl extends Parser {
     private final EnumSet<Kind> recoverStat;
     private final EnumSet<Kind> recoverMethodDecl;
     private int errDist = 3;
+    private Obj curMethod = null;
 
     public ParserImpl(Scanner scanner) {
         super(scanner);
@@ -183,25 +184,25 @@ public final class ParserImpl extends Parser {
 
         check(Kind.ident);
 
-        Obj meth = tab.insert(Obj.Kind.Meth, t.str, type);
+        curMethod = tab.insert(Obj.Kind.Meth, t.str, type);
 
         check(Kind.lpar);
         tab.openScope();
 
         if (sym == Kind.ident) {
-            FormPars(meth);
+            FormPars(curMethod);
         }
         check(Kind.rpar);
 
         // if we are parsing the main method, we have to set the main program count
-        if (meth.name.equals(MAIN_NAME)) {
+        if (curMethod.name.equals(MAIN_NAME)) {
             code.mainpc = code.pc;
 
-            if (meth.nPars > 0) {
+            if (curMethod.nPars > 0) {
                 error(Message.MAIN_WITH_PARAMS);
             }
 
-            if (!meth.type.equals(Tab.noType)) {
+            if (!curMethod.type.equals(Tab.noType)) {
                 error(Message.MAIN_NOT_VOID);
             }
         }
@@ -213,17 +214,17 @@ public final class ParserImpl extends Parser {
         if (tab.curScope.locals().size() > MAX_LOCALS) {
             error(Message.TOO_MANY_LOCALS);
         } else {
-            meth.adr = code.pc;
+            curMethod.adr = code.pc;
             code.put(OpCode.enter);
-            code.put(meth.nPars);
+            code.put(curMethod.nPars);
             code.put(tab.curScope.nVars());
         }
 
-        Block();
+        Block(null);
 
-        meth.locals = tab.curScope.locals();
+        curMethod.locals = tab.curScope.locals();
 
-        if (meth.type == Tab.noType) {
+        if (curMethod.type == Tab.noType) {
             code.put(OpCode.exit);
             code.put(OpCode.return_);
         } else {
@@ -268,22 +269,22 @@ public final class ParserImpl extends Parser {
         }
     }
 
-    private void Block() {
+    private void Block(LabelImpl breakLab) {
         check(Kind.lbrace);
         // check for rbrace and eof since we could not enter recover statements otherwise
         // since the loop would not be entered if the start of a statement is incorrect
         while (sym != Kind.rbrace && sym != Kind.eof) {
-            Statement();
+            Statement(breakLab);
         }
         check(Kind.rbrace);
     }
 
-    private void Statement() {
+    private void Statement(LabelImpl breakLab) {
         if (!firstStatement.contains(sym)) {
             recoverStat();
         }
 
-        Operand x;
+        Operand x = null;
 
         switch (sym) {
             case ident:
@@ -361,31 +362,64 @@ public final class ParserImpl extends Parser {
             case if_:
                 scan();
                 check(Kind.lpar);
-                Condition();
+                Operand condX = Condition();
+                code.fJump(condX);
+                condX.tLabel.here();
                 check(Kind.rpar);
-                Statement();
+                Statement(breakLab);
                 if (sym == Kind.else_) {
                     scan();
-                    Statement();
+                    Statement(breakLab);
                 }
                 break;
             case while_:
+                // break only allowed in while or do-while
+                breakLab = new LabelImpl(code);
+
                 scan();
                 check(Kind.lpar);
-                Condition();
+                LabelImpl top = new LabelImpl(code);
+                top.here();
+                Operand whileX = Condition();
+                code.fJump(whileX);
+                whileX.tLabel.here();
                 check(Kind.rpar);
-                Statement();
+                Statement(breakLab);
+
+                code.jump(top);
+                whileX.fLabel.here();
+                breakLab.here();
                 break;
             case break_:
                 scan();
+
+                // check if break was encountered outside a loop
+                if (breakLab == null) {
+                    error(Message.NO_LOOP);
+                } else {
+                    code.jump(breakLab);
+                }
+
                 check(Kind.semicolon);
                 break;
             case return_:
                 scan();
                 if (firstExpr.contains(sym)) {
+                    if (curMethod.type == Tab.noType) {
+                        error(Message.RETURN_VOID);
+                    }
                     x = Expr();
                     code.load(x);
+
+                    if (!x.type.assignableTo(curMethod.type)) {
+                        error(Message.RETURN_TYPE);
+                    }
                 }
+
+                if (x == null && curMethod.type != Tab.noType) {
+                    error(Message.RETURN_NO_VAL);
+                }
+
                 check(Kind.semicolon);
                 code.put(OpCode.exit);
                 code.put(OpCode.return_);
@@ -436,7 +470,7 @@ public final class ParserImpl extends Parser {
                 check(Kind.semicolon);
                 break;
             case lbrace:
-                Block();
+                Block(breakLab);
                 break;
             case semicolon:
                 scan();
@@ -731,57 +765,71 @@ public final class ParserImpl extends Parser {
         }
     }
 
-    private void Condition() {
-        CondTerm();
+    private Operand Condition() {
+        Operand x = CondTerm();
         while (sym == Kind.or) {
+            code.tJump(x);
             scan();
-            CondTerm();
+            x.fLabel.here();
+            Operand y = CondTerm();
+            x.fLabel = y.fLabel;
+            x.op = y.op;
         }
+
+        return x;
     }
 
-    private void CondTerm() {
-        CondFact();
+    private Operand CondTerm() {
+        Operand x = CondFact();
         while (sym == Kind.and) {
+            code.fJump(x);
             scan();
-            CondFact();
+            Operand y = CondFact();
+            x.op = y.op;
         }
+
+        return x;
     }
 
-    private void CondFact() {
+    private Operand CondFact() {
         Operand x = Expr();
-        OpCode op = Relop();
+        code.load(x);
+        CompOp op = Relop();
         Operand y = Expr();
+        code.load(y);
 
         if (!x.type.compatibleWith(y.type)) {
             error(Message.INCOMP_TYPES);
-        } else if ((x.type.isRefType() || y.type.isRefType()) && (op != OpCode.jne && op != OpCode.jeq)) {
+        } else if ((x.type.isRefType() || y.type.isRefType()) && (op != CompOp.ne && op != CompOp.eq)) {
             error(Message.EQ_CHECK);
         }
+
+        return new Operand(op, code);
     }
 
-    private OpCode Relop() {
+    private CompOp Relop() {
         switch (sym) {
             case eql:
                 scan();
-                return OpCode.jeq;
+                return CompOp.eq;
             case neq:
                 scan();
-                return OpCode.jne;
+                return CompOp.ne;
             case gtr:
                 scan();
-                return OpCode.jgt;
+                return CompOp.gt;
             case geq:
                 scan();
-                return OpCode.jge;
+                return CompOp.ge;
             case lss:
                 scan();
-                return OpCode.jlt;
+                return CompOp.lt;
             case leq:
                 scan();
-                return OpCode.jle;
+                return CompOp.le;
             default:
                 error(Message.REL_OP);
-                return OpCode.nop;
+                return null;
         }
     }
 
