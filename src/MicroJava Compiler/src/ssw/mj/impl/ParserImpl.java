@@ -272,7 +272,7 @@ public final class ParserImpl extends Parser {
     private void Block(LabelImpl breakLab) {
         check(Kind.lbrace);
         // check for rbrace and eof since we could not enter recover statements otherwise
-        // since the loop would not be entered if the start of a statement is incorrect
+        // and the loop would not be entered if the start of a statement is incorrect
         while (sym != Kind.rbrace && sym != Kind.eof) {
             Statement(breakLab);
         }
@@ -356,34 +356,41 @@ public final class ParserImpl extends Parser {
                 check(Kind.semicolon);
                 break;
             case if_:
+                LabelImpl ifEnd;
                 scan();
                 check(Kind.lpar);
-                Operand condX = Condition();
-                code.fJump(condX);
-                condX.tLabel.here();
+                x = Condition();
+                code.fJump(x);
                 check(Kind.rpar);
+                x.tLabel.here();
                 Statement(breakLab);
+
                 if (sym == Kind.else_) {
+                    ifEnd = new LabelImpl(code);
+                    code.jump(ifEnd);
                     scan();
                     Statement(breakLab);
+                    ifEnd.here();
+                } else {
+                    x.fLabel.here();
                 }
                 break;
             case while_:
-                // break only allowed in while or do-while
+                // break only allowed in while
                 breakLab = new LabelImpl(code);
 
                 scan();
                 check(Kind.lpar);
                 LabelImpl top = new LabelImpl(code);
                 top.here();
-                Operand whileX = Condition();
-                code.fJump(whileX);
-                whileX.tLabel.here();
+                x = Condition();
+                code.fJump(x);
+                x.tLabel.here();
                 check(Kind.rpar);
                 Statement(breakLab);
 
                 code.jump(top);
-                whileX.fLabel.here();
+                x.fLabel.here();
                 breakLab.here();
                 break;
             case break_:
