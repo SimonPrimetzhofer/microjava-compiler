@@ -670,15 +670,7 @@ public final class ParserImpl extends Parser {
                         error(Message.ARRAY_SIZE);
                     }
                     code.load(y);
-                    code.put(OpCode.newarray);
-
-                    if (type == Tab.charType) {
-                        // 0 stands for char-array
-                        code.put(0);
-                    } else {
-                        // 1 stands for int-array
-                        code.put(1);
-                    }
+                    code.createArray(-INC_VALUE, type);
                     type = new StructImpl(type);
                     check(Kind.rbrack);
                 } else {
@@ -691,7 +683,6 @@ public final class ParserImpl extends Parser {
                 }
 
                 x = new Operand(type);
-
                 break;
             case lpar:
                 scan();
@@ -716,7 +707,7 @@ public final class ParserImpl extends Parser {
 
         x.kind = Operand.Kind.Stack;
 
-        // we have to iterate over params to check assignability and amount of params
+        // we have to iterate over params to check assignability and amount of them
         Iterator<Obj> localsIterator = x.obj.locals.iterator();
         int nPars = 0;
 
@@ -727,6 +718,8 @@ public final class ParserImpl extends Parser {
                 error(Message.PARAM_TYPE);
             }
 
+            code.load(y);
+
             // handle more params
             while (sym == Kind.comma) {
                 scan();
@@ -735,6 +728,7 @@ public final class ParserImpl extends Parser {
                 if (localsIterator.hasNext() && !y.type.assignableTo(localsIterator.next().type)) {
                     error(Message.PARAM_TYPE);
                 }
+                code.load(y);
             }
         }
 
@@ -767,14 +761,45 @@ public final class ParserImpl extends Parser {
     }
 
     private void VarArgs(Obj obj) {
-        check(Kind.hash);
-        check(Kind.number);
-        if (firstExpr.contains(sym)) {
-            Expr();
-            while (sym == Kind.comma) {
-                scan();
-                Expr();
+        if (sym == Kind.hash) {
+            scan();
+            check(Kind.number);
+
+            int expectedVarArgs = t.val;
+            code.createArray(expectedVarArgs, obj.type.elemType);
+
+            int parsedVarArgs = 0;
+            for (;;) {
+                if (firstExpr.contains(sym)) {
+                    code.put(OpCode.dup);
+                    code.loadConst(parsedVarArgs);
+
+                    Operand x = Expr();
+                    if (obj != tab.noObj && !x.type.assignableTo(obj.type.elemType)) {
+                        error(Message.PARAM_TYPE);
+                    }
+
+                    code.load(x);
+                    if (obj.type.elemType == Tab.intType) {
+                        code.put(OpCode.astore);
+                    } else if (obj.type.elemType == Tab.charType) {
+                        code.put(OpCode.bastore);
+                    }
+                    parsedVarArgs++;
+                } else if (sym == Kind.comma) {
+                    scan();
+                } else {
+                    break;
+                }
             }
+
+            if (parsedVarArgs < expectedVarArgs) {
+                error(Message.LESS_ACTUAL_VARARGS);
+            } else if (parsedVarArgs > expectedVarArgs) {
+                error(Message.MORE_ACTUAL_VARARGS);
+            }
+        } else {
+            code.createArray(t.val, obj.type.elemType);
         }
     }
 
