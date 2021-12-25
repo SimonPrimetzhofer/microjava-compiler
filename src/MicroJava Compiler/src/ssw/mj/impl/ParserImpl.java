@@ -720,12 +720,11 @@ public final class ParserImpl extends Parser {
 
             code.load(y);
 
-            // handle more params
             while (sym == Kind.comma) {
                 scan();
                 y = Expr();
                 nPars++;
-                if (localsIterator.hasNext() && !y.type.assignableTo(localsIterator.next().type)) {
+                if (localsIterator.hasNext() && !y.type.assignableTo(localsIterator.next().type) && (!localsIterator.hasNext() && !x.obj.hasVarArg)) {
                     error(Message.PARAM_TYPE);
                 }
                 code.load(y);
@@ -769,7 +768,7 @@ public final class ParserImpl extends Parser {
             code.createArray(expectedVarArgs, obj.type.elemType);
 
             int parsedVarArgs = 0;
-            for (;;) {
+            for (; ; ) {
                 if (firstExpr.contains(sym)) {
                     code.put(OpCode.dup);
                     code.loadConst(parsedVarArgs);
