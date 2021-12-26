@@ -126,11 +126,7 @@ public final class CodeImpl extends Code {
                 put2(x.adr);
                 break;
             case Elem:
-                if (x.type == Tab.charType) {
-                    put(OpCode.bastore);
-                } else {
-                    put(OpCode.astore);
-                }
+                storeInArray(x.type);
                 break;
             default:
                 parser.error(Message.NO_VAR);
@@ -209,6 +205,14 @@ public final class CodeImpl extends Code {
             put(0);
         } else {
             put(1);
+        }
+    }
+
+    public void storeInArray(StructImpl type) {
+        if (type == Tab.charType) {
+            put(OpCode.bastore);
+        } else {
+            put(OpCode.astore);
         }
     }
 }

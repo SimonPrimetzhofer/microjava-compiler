@@ -800,11 +800,7 @@ public final class ParserImpl extends Parser {
                     }
 
                     code.load(x);
-                    if (obj.type.elemType == Tab.intType) {
-                        code.put(OpCode.astore);
-                    } else if (obj.type.elemType == Tab.charType) {
-                        code.put(OpCode.bastore);
-                    }
+                    code.storeInArray(obj.type.elemType);
                     parsedVarArgs++;
                 } else if (sym == Kind.comma) {
                     scan();
