@@ -260,7 +260,9 @@ public final class ParserImpl extends Parser {
 
             if (sym == Kind.comma) {
                 scan();
-            } else break;
+            } else {
+                break;
+            }
         }
         if (sym == Kind.ppperiod) {
             scan();
@@ -736,17 +738,12 @@ public final class ParserImpl extends Parser {
             while (sym == Kind.comma) {
                 scan();
                 y = Expr();
-                nPars++;
+
                 if (localsIterator.hasNext() && !y.type.assignableTo(localsIterator.next().type) && (!localsIterator.hasNext() && !x.obj.hasVarArg)) {
                     error(Message.PARAM_TYPE);
                 }
-                // TODO: anschauen, ob wirklich nötig
-//                if (x.obj == tab.chrObj && y.type.kind != Struct.Kind.Int
-//                        || x.obj == tab.ordObj && y.type.kind != Struct.Kind.Char
-//                        || x.obj == tab.lenObj && y.type.kind != Struct.Kind.Arr) {
-//                    this.error(Message.PARAM_TYPE);
-//                }
                 code.load(y);
+                nPars++;
             }
         }
 
