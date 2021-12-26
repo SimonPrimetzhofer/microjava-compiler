@@ -738,12 +738,12 @@ public final class ParserImpl extends Parser {
             while (sym == Kind.comma) {
                 scan();
                 y = Expr();
+                nPars++;
 
-                if (localsIterator.hasNext() && !y.type.assignableTo(localsIterator.next().type) && (!localsIterator.hasNext() && !x.obj.hasVarArg)) {
+                if (localsIterator.hasNext() && !y.type.assignableTo(localsIterator.next().type) && (!x.obj.hasVarArg || localsIterator.hasNext())) {
                     error(Message.PARAM_TYPE);
                 }
                 code.load(y);
-                nPars++;
             }
         }
 
@@ -761,7 +761,7 @@ public final class ParserImpl extends Parser {
                 VarArgs(tab.noObj);
                 error(Message.INVALID_VARARG_CALL);
             }
-        } else if (x.obj.hasVarArg) { // TODO: evtl vereinfachen
+        } else if (x.obj.hasVarArg) {
             VarArgs(tab.noObj);
         }
 
