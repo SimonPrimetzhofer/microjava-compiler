@@ -229,7 +229,7 @@ public final class ParserImpl extends Parser {
             code.put(OpCode.return_);
         } else {
             code.put(OpCode.trap);
-            code.put(1);
+            code.put(INC_VALUE);
         }
 
         tab.closeScope();
@@ -303,6 +303,12 @@ public final class ParserImpl extends Parser {
                             code.put(OpCode.dup2);
                             code.put(OpCode.aload);
                         } else {
+                            // don't load fields twice
+                            if (x.kind != Operand.Kind.Fld) {
+                                Operand.Kind opKind = x.kind;
+                                code.load(x);
+                                x.kind = opKind;
+                            }
                             code.put(OpCode.dup);
                         }
                     }
@@ -356,7 +362,6 @@ public final class ParserImpl extends Parser {
                 check(Kind.semicolon);
                 break;
             case if_:
-                LabelImpl ifEnd;
                 scan();
                 check(Kind.lpar);
                 x = Condition();
@@ -366,8 +371,9 @@ public final class ParserImpl extends Parser {
                 Statement(breakLab);
 
                 if (sym == Kind.else_) {
-                    ifEnd = new LabelImpl(code);
+                    LabelImpl ifEnd = new LabelImpl(code);
                     code.jump(ifEnd);
+                    x.fLabel.here();
                     scan();
                     Statement(breakLab);
                     ifEnd.here();
@@ -734,6 +740,12 @@ public final class ParserImpl extends Parser {
                 if (localsIterator.hasNext() && !y.type.assignableTo(localsIterator.next().type) && (!localsIterator.hasNext() && !x.obj.hasVarArg)) {
                     error(Message.PARAM_TYPE);
                 }
+                // TODO: anschauen, ob wirklich nötig
+//                if (x.obj == tab.chrObj && y.type.kind != Struct.Kind.Int
+//                        || x.obj == tab.ordObj && y.type.kind != Struct.Kind.Char
+//                        || x.obj == tab.lenObj && y.type.kind != Struct.Kind.Arr) {
+//                    this.error(Message.PARAM_TYPE);
+//                }
                 code.load(y);
             }
         }
@@ -752,7 +764,7 @@ public final class ParserImpl extends Parser {
                 VarArgs(tab.noObj);
                 error(Message.INVALID_VARARG_CALL);
             }
-        } else {
+        } else if (x.obj.hasVarArg) { // TODO: evtl vereinfachen
             VarArgs(tab.noObj);
         }
 
@@ -767,11 +779,13 @@ public final class ParserImpl extends Parser {
     }
 
     private void VarArgs(Obj obj) {
+        int expectedVarArgs = 0;
+
         if (sym == Kind.hash) {
             scan();
             check(Kind.number);
 
-            int expectedVarArgs = t.val;
+            expectedVarArgs = t.val;
             code.createArray(expectedVarArgs, obj.type.elemType);
 
             int parsedVarArgs = 0;
@@ -805,7 +819,7 @@ public final class ParserImpl extends Parser {
                 error(Message.MORE_ACTUAL_VARARGS);
             }
         } else {
-            code.createArray(t.val, obj.type.elemType);
+            code.createArray(expectedVarArgs, obj.type.elemType);
         }
     }
 
